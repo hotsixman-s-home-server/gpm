@@ -3,17 +3,49 @@ package database
 import (
 	"database/sql"
 	"gpm/module/util"
+	"log"
+	"os"
 	"path/filepath"
 
 	_ "modernc.org/sqlite"
 )
 
-var initQueries []string = []string{
-	"CREATE TABLE IF NOT EXISTS logfile (name TEXT, filename TEXT);",
-	`CREATE TABLE IF NOT EXISTS "logfile-main" (name TEXT, filename TEXT);`,
+type _DB struct {
+	db *sql.DB
 }
 
-func OpenDB() (*sql.DB, error) {
+var DB *_DB
+
+func init() {
+	var err error = nil
+	DB, err = OpenDB()
+	if err != nil {
+		log.Println("Cannot open database.")
+		os.Exit(1)
+	}
+}
+
+func (this _DB) Close() error {
+	return this.db.Close()
+}
+
+func (this _DB) UpdateMainLogFile(filename string) error {
+	_, err := this.db.Exec("INSERT OR REPLACE `logfile-name` (filename) VALUES (?)", filename)
+	return err
+}
+
+func (this _DB) UpdateLogFile(processName string, filename string) error {
+	_, err := this.db.Exec("INSERT OR REPLACE `logfile` (name, filename) VALUES (?, ?)", processName, filename)
+	return err
+}
+
+var initQueries []string = []string{
+	"CREATE TABLE IF NOT EXISTS pid (pid INTEGER);",
+	"CREATE TABLE IF NOT EXISTS logfile (name TEXT UNIQUE, filename TEXT);",
+	`CREATE TABLE IF NOT EXISTS "logfile-main" (filename TEXT);`,
+}
+
+func OpenDB() (*_DB, error) {
 	dbPath, err := getDBPath()
 	if err != nil {
 		return nil, err
@@ -31,7 +63,7 @@ func OpenDB() (*sql.DB, error) {
 		}
 	}
 
-	return db, nil
+	return &_DB{db}, nil
 }
 
 func getDBPath() (string, error) {

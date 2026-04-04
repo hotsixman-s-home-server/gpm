@@ -1,8 +1,9 @@
 package cli
 
 import (
+	"bufio"
+	"gpm/module/logger"
 	"gpm/module/uds"
-	"log"
 	"os"
 
 	"github.com/spf13/cobra"
@@ -10,17 +11,29 @@ import (
 
 var connectCmd = &cobra.Command{
 	Use:   "connect",
-	Short: "Connect to GPM daemon process",
+	Short: "Connect to process",
 	Run: func(cmd *cobra.Command, args []string) {
-		_, err := uds.Connect()
-		if err != nil {
-			log.Println(err)
+		name, err := cmd.Flags().GetString("name")
+		if err != nil || name == "" {
+			logger.Errorln(err)
 			os.Exit(1)
 		}
-		select {}
+
+		client, err := uds.Connect(name)
+		if err != nil {
+			logger.Errorln(err)
+			os.Exit(1)
+		}
+
+		scanner := bufio.NewScanner(os.Stdin)
+		for scanner.Scan() {
+			command := scanner.Text()
+			client.Command(command)
+		}
 	},
 }
 
 func init() {
+	connectCmd.Flags().StringP("name", "", "", "Name of process")
 	rootCmd.AddCommand(connectCmd)
 }

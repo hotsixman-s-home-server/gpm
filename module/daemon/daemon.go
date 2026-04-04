@@ -3,10 +3,10 @@ package daemon
 import (
 	"gpm/module/database"
 	"gpm/module/logger"
+	"gpm/module/pm"
 	"gpm/module/uds"
 	"os"
 	"os/exec"
-	"time"
 )
 
 const DAEMON_ENV = "GPM_DAEMON_PROCESS"
@@ -39,47 +39,38 @@ func DaemonInit() {
 	}
 
 	// db
-	db, err := database.OpenDB()
-	if err != nil {
-		log.Log("Cannot open db.")
-		os.Exit(1)
-	}
-	defer db.Close()
+	defer database.DB.Close()
 
-	//
+	// pid 체크
 	_, running, err := PIDManager.CheckPID()
 	if err != nil {
-		log.Log("Cannot check GPM daemon is running.")
+		log.Logln("Cannot check GPM daemon is running.")
 		os.Exit(1)
 	}
 	if running {
-		log.Log("GPM is already running.")
+		log.Logln("GPM is already running.")
 		os.Exit(1)
 	}
 
-	//
+	// pid 저장
 	err = PIDManager.RecordPid()
 	if err != nil {
-		log.Log("Cannot record pid.")
+		log.Logln("Cannot record pid.")
 		os.Exit(1)
 	}
 	defer PIDManager.DeletePid()
 
-	//
+	// 서버 생성
 	udsServer, err := uds.Listen()
 	if err != nil {
-		log.Log("Cannot listen uds server.")
+		log.Logln("Cannot listen uds server.")
 		os.Exit(1)
 	}
 	log.SetUDSServer(udsServer)
 
-	//
-	go func() {
-		for {
-			log.Log(time.Now())
-			time.Sleep(time.Second)
-		}
-	}()
+	// pm 생성
+	pm := &pm.PM{}
+	udsServer.SetPM(pm)
 
 	select {}
 }
