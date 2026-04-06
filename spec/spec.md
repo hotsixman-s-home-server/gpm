@@ -1,6 +1,6 @@
 # Go Process Manager (GPM) Specification
 
-PM2의 핵심 기능을 벤치마킹한 Go 기반의 간단한 프로세스 매니저 사양서입니다.
+Go 기반의 간단한 프로세스 매니저 사양서입니다.
 
 ## 1. 핵심 기능 (Core Features)
 
