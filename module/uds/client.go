@@ -107,17 +107,36 @@ func (this *UDSConnectionClient) Command(command string) error {
 }
 
 // Start
-func Start(startMessage types.StartMessage) error {
+func Start(startMessage types.StartMessage) (message *types.StartResultMessage, err error) {
 	conn, err := makeConn()
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	JSON, err := json.Marshal(startMessage)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	_, err = conn.Write(append(JSON, '\n'))
-	return err
+	if err != nil {
+		return nil, err
+	}
+
+	reader := bufio.NewReader(conn)
+	messageJSON, err := reader.ReadString('\n')
+	if err != nil {
+		return nil, err
+	}
+
+	message = &types.StartResultMessage{}
+	err = json.Unmarshal([]byte(strings.TrimSpace(messageJSON)), message)
+	if err != nil {
+		logger.Errorln(err)
+		return nil, &types.InvalidMessage{
+			JSON: messageJSON,
+		}
+	}
+
+	return message, nil
 }

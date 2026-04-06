@@ -13,6 +13,12 @@ import (
 
 const DAEMON_ENV = "GPM_DAEMON_PROCESS"
 
+/*
+-1: Not daemon
+0: success
+1: start error
+2: already running
+*/
 func SpawnDaemon() (int, error) {
 	if os.Getenv(DAEMON_ENV) == "1" {
 		return -1, nil

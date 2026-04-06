@@ -26,6 +26,20 @@ func Errorln(v ...any) {
 	fmt.Println(header, message)
 }
 
+func SLogln(v ...any) string {
+	message := strings.TrimRight(fmt.Sprintln(v...), " \t\n\r")
+	timeString := "[" + time.Now().Format("2006-01-02 15:04:05") + "]"
+	header := "\033[32m" + timeString + " [LOG]" + "\033[0m"
+	return header + " " + message
+}
+
+func SErrorln(v ...any) string {
+	message := strings.TrimRight(fmt.Sprintln(v...), " \t\n\r")
+	timeString := "[" + time.Now().Format("2006-01-02 15:04:05") + "]"
+	header := "\033[31m" + timeString + " [ERROR]" + "\033[0m"
+	return header + " " + message
+}
+
 type Logger struct {
 	dirPath   string
 	logFile   *os.File
@@ -111,7 +125,7 @@ func CreateLogger(name string, timeRecording bool, server types.ServerInterface)
 		name:      name,
 		server:    server,
 		mutex:     &sync.Mutex{},
-		main:      true,
+		main:      false,
 	}, nil
 }
 

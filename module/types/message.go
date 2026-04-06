@@ -18,3 +18,16 @@ type StartMessage struct {
 	Cwd  string            `json:"cwd"`
 	Env  map[string]string `json:"Env"`
 }
+
+type LogMessage struct {
+	// "log" | "error"
+	Type    string `json:"type"`
+	Message string `json:"message"`
+}
+
+type StartResultMessage struct {
+	// "startResult"
+	Type    string `json:"type"`
+	Success bool   `json:"success"`
+	Error   string `json:"error"`
+}

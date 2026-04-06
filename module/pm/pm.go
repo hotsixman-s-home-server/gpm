@@ -1,33 +1,40 @@
 package pm
 
 import (
-	"bufio"
 	"gpm/module/logger"
 	"gpm/module/types"
 	"io"
 	"os/exec"
+	"sync"
 )
 
 type PM struct {
-	process    map[string]*PMProcess
-	mainLogger *logger.Logger
-	server     types.ServerInterface
+	process      map[string]*PMProcess
+	mainLogger   *logger.Logger
+	server       types.ServerInterface
+	processMutex *sync.Mutex
 }
 
+type PMProcessStatus string
+
 type PMProcess struct {
-	name         string
-	process      *exec.Cmd
-	stdin        *bufio.Writer
-	out          *io.PipeReader
+	name string
+	// 'running'|'stop'|'error'
+	status       PMProcessStatus
+	cmd          *exec.Cmd
+	stdin        io.WriteCloser
+	stdout       io.ReadCloser
+	stderr       io.ReadCloser
 	logger       *logger.Logger
 	startMessage types.StartMessage
 }
 
 func NewPM(mainLogger *logger.Logger) *PM {
 	pm := &PM{
-		make(map[string]*PMProcess),
-		mainLogger,
-		nil,
+		process:      make(map[string]*PMProcess),
+		mainLogger:   mainLogger,
+		server:       nil,
+		processMutex: &sync.Mutex{},
 	}
 
 	return pm

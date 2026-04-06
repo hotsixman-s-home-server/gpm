@@ -12,7 +12,6 @@ import (
 	"sync"
 
 	"github.com/google/uuid"
-	"github.com/mitchellh/mapstructure"
 )
 
 type UDSServer struct {
@@ -166,14 +165,7 @@ func (this *UDSServer) handleClient(conn net.Conn) {
 		}
 	case "start":
 		{
-			var startMessage types.StartMessage
-			err := mapstructure.Decode(message, &startMessage)
-			if err != nil {
-				this.log.Errorln(err)
-				return
-			}
-
-			this.pm.NewProcess(startMessage)
+			this.start(conn, message)
 		}
 	}
 }

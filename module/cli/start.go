@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"fmt"
 	"gpm/module/logger"
 	"gpm/module/types"
 	"gpm/module/uds"
@@ -59,7 +60,20 @@ var startCmd = &cobra.Command{
 			Cwd:  cwd,
 			Env:  env,
 		}
-		uds.Start(message)
+
+		resultMessage, err := uds.Start(message)
+		if err != nil {
+			logger.Errorln(err)
+			os.Exit(1)
+		}
+
+		if resultMessage.Success {
+			logger.Logln(fmt.Sprintf("Successfully started process \"%s\".", message.Name))
+			os.Exit(0)
+		} else {
+			logger.Errorln(resultMessage.Error)
+			os.Exit(1)
+		}
 	},
 }
 
