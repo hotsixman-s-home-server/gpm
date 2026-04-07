@@ -116,7 +116,9 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			cmdStr := m.textInput.Value()
 			if strings.TrimSpace(cmdStr) != "" {
 				// 히스토리 저장 및 인덱스 초기화
-				m.history = append(m.history, cmdStr)
+				if m.history[len(m.history)-1] != cmdStr {
+					m.history = append(m.history, cmdStr)
+				}
 				m.historyIndex = -1
 
 				m.client.Command(cmdStr)
