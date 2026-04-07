@@ -54,5 +54,5 @@ func (pm *PM) Input(name string, message string) {
 		return
 	}
 
-	pm.process[name].stdin.Write([]byte(message))
+	pm.process[name].stdin.Write(append([]byte(message), '\n'))
 }
