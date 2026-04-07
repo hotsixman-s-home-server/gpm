@@ -16,6 +16,8 @@ func (pm *PM) Delete(message types.DeleteMessage) error {
 		return err
 	}
 
+	pm.processMutex.Lock()
+	defer pm.processMutex.Unlock()
 	delete(pm.process, message.Name)
 	for i, process := range pm.processArr {
 		if process.name == message.Name {

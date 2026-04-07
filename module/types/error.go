@@ -39,3 +39,14 @@ type ProcessRunningError struct {
 func (this ProcessRunningError) Error() string {
 	return fmt.Sprintf("Process \"%s\" is running.", this.Name)
 }
+
+/*
+프로세스가 실행중이지 않습니다.
+*/
+type ProcessNotRunningError struct {
+	Name string
+}
+
+func (this ProcessNotRunningError) Error() string {
+	return fmt.Sprintf("Process \"%s\" is not running.", this.Name)
+}

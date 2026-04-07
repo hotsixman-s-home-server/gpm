@@ -52,7 +52,7 @@ var startCmd = &cobra.Command{
 			env = make(map[string]string)
 		}
 
-		maxRestartCount, err := cmd.Flags().GetInt("max-restart")
+		maxRecoverCount, err := cmd.Flags().GetInt("max-recover")
 		if err != nil {
 			logger.Errorln(err)
 			os.Exit(1)
@@ -65,7 +65,7 @@ var startCmd = &cobra.Command{
 			Args:            processArgs,
 			Cwd:             cwd,
 			Env:             env,
-			MaxRestartCount: maxRestartCount,
+			MaxRecoverCount: maxRecoverCount,
 		}
 
 		conn, reader, err := client.MakeUDSConn()
@@ -96,6 +96,6 @@ func init() {
 	startCmd.Flags().String("cwd", "", "Working directory of the starting process.")
 	startCmd.Flags().StringSlice("args", []string{}, "Extra arguments to start the process.")
 	startCmd.Flags().StringToString("env", nil, "Set envoriment values for the starting process.")
-	startCmd.Flags().Int("max-restart", 15, "Max restart count.")
+	startCmd.Flags().Int("max-recover", 10, "Max recover count.")
 	rootCmd.AddCommand(startCmd)
 }

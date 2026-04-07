@@ -61,19 +61,21 @@ func (pm *PM) initProcess(startMessage types.StartMessage, process *PMProcess) e
 
 	if process == nil {
 		process = &PMProcess{
-			name:         startMessage.Name,
-			status:       "running",
-			cmd:          cmd,
-			stdin:        stdin,
-			stdout:       stdout,
-			stderr:       stderr,
-			logger:       logger,
-			startMessage: startMessage,
-			util:         util,
-			restartCount: 0,
+			name:           startMessage.Name,
+			status:         "running",
+			cmd:            cmd,
+			stdin:          stdin,
+			stdout:         stdout,
+			stderr:         stderr,
+			logger:         logger,
+			startMessage:   startMessage,
+			util:           util,
+			recoveredCount: 0,
+			autoClean:      true,
 		}
 		pm.process[startMessage.Name] = process
 		pm.processArr = append(pm.processArr, process)
+		process.logger.Logln("Process started.")
 	} else {
 		process.status = "running"
 		process.cmd = cmd
@@ -81,6 +83,8 @@ func (pm *PM) initProcess(startMessage types.StartMessage, process *PMProcess) e
 		process.stdout = stdout
 		process.stderr = stderr
 		process.util = util
+		process.autoClean = true
+		process.logger.Logln("Process restarted.")
 	}
 
 	go func() {
@@ -97,8 +101,15 @@ func (pm *PM) initProcess(startMessage types.StartMessage, process *PMProcess) e
 	}()
 
 	go func() {
-		restartFlag := false
+		recoverFlag := false
 		err := process.cmd.Wait()
+
+		if !process.autoClean {
+			return
+		}
+
+		pm.processMutex.Lock()
+		defer pm.processMutex.Unlock()
 		if err == nil || process.status == "stop" {
 			process.logger.Logln(fmt.Sprintf("Process exited. Error: %v", err))
 			process.status = "stop"
@@ -106,24 +117,17 @@ func (pm *PM) initProcess(startMessage types.StartMessage, process *PMProcess) e
 		} else {
 			process.logger.Errorln(fmt.Sprintf("Process exited. Error: %v", err))
 			process.status = "error"
-			if process.restartCount < process.startMessage.MaxRestartCount {
-				process.restartCount++
-				restartFlag = true
+			if process.recoveredCount < process.startMessage.MaxRecoverCount {
+				process.recoveredCount++
+				recoverFlag = true
 			}
 		}
 
-		process.stdin.Close()
-		process.stdout.Close()
-		process.stderr.Close()
-		process.stdin = nil
-		process.stdout = nil
-		process.stderr = nil
-		process.cmd = nil
-		process.util = nil
+		process.clean()
 
-		if restartFlag {
-			pm.mainLogger.Errorln("Restarting process:", process.name)
-			process.logger.Errorln("Restarting process...")
+		if recoverFlag {
+			pm.mainLogger.Errorln("Recovering process:", process.name)
+			process.logger.Errorln("Recovering process...")
 			go pm.initProcess(startMessage, process)
 		}
 	}()

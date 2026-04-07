@@ -23,15 +23,16 @@ type PMProcessStatus string
 type PMProcess struct {
 	name string
 	// 'running'|'stop'|'error'
-	status       PMProcessStatus
-	cmd          *exec.Cmd
-	stdin        io.WriteCloser
-	stdout       io.ReadCloser
-	stderr       io.ReadCloser
-	logger       *logger.Logger
-	startMessage types.StartMessage
-	util         *processUtil.Process
-	restartCount int
+	status         PMProcessStatus
+	cmd            *exec.Cmd
+	stdin          io.WriteCloser
+	stdout         io.ReadCloser
+	stderr         io.ReadCloser
+	logger         *logger.Logger
+	startMessage   types.StartMessage
+	util           *processUtil.Process
+	recoveredCount int
+	autoClean      bool
 }
 
 func NewPM(mainLogger *logger.Logger) *PM {
@@ -49,10 +50,26 @@ func (pm *PM) SetServer(server types.ServerInterface) {
 	pm.server = server
 }
 
-func (pm *PM) Input(name string, message string) {
-	if pm.process[name] == nil {
-		return
+func (pm *PM) Input(name string, message string) error {
+	process := pm.process[name]
+	if process == nil {
+		return &types.NoProcessError{Name: name}
+	}
+	if process.status != "running" {
+		return &types.ProcessNotRunningError{Name: name}
 	}
 
 	pm.process[name].stdin.Write(append([]byte(message), '\n'))
+	return nil
+}
+
+func (process *PMProcess) clean() {
+	process.stdin.Close()
+	process.stdout.Close()
+	process.stderr.Close()
+	process.stdin = nil
+	process.stdout = nil
+	process.stderr = nil
+	process.cmd = nil
+	process.util = nil
 }

@@ -2,8 +2,10 @@ package server
 
 import (
 	"bufio"
+	"errors"
 	"gpm/module/types"
 	"gpm/module/util"
+	"io"
 	"net"
 	"strings"
 
@@ -38,7 +40,11 @@ func (server *Server) connect(conn net.Conn, reader *bufio.Reader, message map[s
 			server.mutex.Lock()
 			delete(server.client, id)
 			server.mutex.Unlock()
-			return err
+			if errors.Is(err, io.EOF) {
+				return nil
+			} else {
+				return err
+			}
 		}
 
 		message, err := util.ParseMessage[types.CommandMessage]([]byte(strings.TrimSpace(JSON)))
@@ -50,7 +56,13 @@ func (server *Server) connect(conn net.Conn, reader *bufio.Reader, message map[s
 			continue
 		}
 		if server.pm != nil {
-			server.pm.Input(client.name, message.Command)
+			err := server.pm.Input(client.name, message.Command)
+			if err != nil {
+				util.SendMessage(conn, &types.LogMessage{
+					Type:    "error",
+					Message: err.Error(),
+				})
+			}
 		}
 	}
 }

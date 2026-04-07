@@ -20,7 +20,7 @@ type StartMessage struct {
 	Args            []string          `json:"args"`
 	Cwd             string            `json:"cwd"`
 	Env             map[string]string `json:"env"`
-	MaxRestartCount int               `json:"maxRestartCount"`
+	MaxRecoverCount int               `json:"maxRecoverCount"`
 }
 
 type StartResultMessage struct {
@@ -46,6 +46,7 @@ type StopResultMessage struct {
 }
 
 // Delete
+
 type DeleteMessage struct {
 	// "delete"
 	Type string `json:"type"`
@@ -54,6 +55,21 @@ type DeleteMessage struct {
 
 type DeleteResultMessage struct {
 	// "deleteResult"
+	Type    string `json:"type"`
+	Success bool   `json:"success"`
+	Error   string `json:"error"`
+}
+
+// restart
+
+type RestartMessage struct {
+	// "restart"
+	Type string `json:"type"`
+	Name string `json:"name"`
+}
+
+type RestartResultMessage struct {
+	// "restartResult"
 	Type    string `json:"type"`
 	Success bool   `json:"success"`
 	Error   string `json:"error"`
@@ -76,7 +92,7 @@ type ListElement struct {
 	Status     string  `json:"status"`
 	CPUPercent float64 `json:"cpuPercent"`
 	Mem        float64 `json:"mem"`
-	Restart    int     `json:"restart"`
+	Recovered  int     `json:"recovered"`
 }
 
 // log

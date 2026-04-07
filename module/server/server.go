@@ -116,6 +116,13 @@ func (server *Server) handleClient(conn net.Conn) error {
 				server.mainLogger.Errorln(err)
 			}
 		}
+	case "restart":
+		{
+			err := server.restart(conn, message)
+			if err != nil {
+				server.mainLogger.Errorln(err)
+			}
+		}
 	}
 
 	return nil
