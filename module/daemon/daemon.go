@@ -75,7 +75,7 @@ func DaemonInit() {
 		logger.Errorln(err)
 		os.Exit(1)
 	}
-	err = os.MkdirAll(homeDir, 0644)
+	err = os.MkdirAll(homeDir, 0755)
 	if err != nil {
 		logger.Errorln(err)
 		os.Exit(1)

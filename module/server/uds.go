@@ -9,7 +9,10 @@ import (
 )
 
 func NewUDSServer() (*Server, error) {
-	socketPath := util.GetUDSPath()
+	socketPath, err := util.GetUDSPath()
+	if err != nil {
+		return nil, err
+	}
 
 	if _, err := os.Stat(socketPath); err == nil {
 		os.Remove(socketPath)
