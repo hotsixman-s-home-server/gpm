@@ -63,6 +63,25 @@ func (pm *PM) Input(name string, message string) error {
 	return nil
 }
 
+func (pm *PM) Tail(name string, lineCount int) ([]string, []string, error) {
+	process := pm.process[name]
+	if process == nil {
+		return []string{}, []string{}, nil
+	}
+
+	logs, err := process.logger.TailLogs(lineCount)
+	if err != nil {
+		return []string{}, []string{}, nil
+	}
+
+	errors, err := process.logger.TailErrors(lineCount)
+	if err != nil {
+		return []string{}, []string{}, nil
+	}
+
+	return logs, errors, nil
+}
+
 func (process *PMProcess) clean() {
 	process.stdin.Close()
 	process.stdout.Close()

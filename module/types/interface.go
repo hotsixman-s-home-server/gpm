@@ -8,6 +8,7 @@ type PMInterface interface {
 	Restart(RestartMessage) error
 	Input(name string, command string) error
 	List() []ListElement
+	Tail(name string, lineCount int) ([]string, []string, error)
 }
 
 // Logger

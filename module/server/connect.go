@@ -34,6 +34,11 @@ func (server *Server) connect(conn net.Conn, reader *bufio.Reader, message map[s
 	}
 	server.client[id] = client
 
+	err = sendOldLogs(conn, server.pm, connectRequestMessage)
+	if err != nil {
+		return err
+	}
+
 	for {
 		JSON, err := client.reader.ReadString('\n')
 		if err != nil {
@@ -65,4 +70,30 @@ func (server *Server) connect(conn net.Conn, reader *bufio.Reader, message map[s
 			}
 		}
 	}
+}
+
+func sendOldLogs(conn net.Conn, pm types.PMInterface, message types.ConnectRequestMessage) error {
+	logs, errors, err := pm.Tail(message.Name, message.Lines)
+	if err != nil {
+		return err
+	}
+	for _, log := range logs {
+		err := util.SendMessage(conn, &types.LogMessage{
+			Type:    "rawlog",
+			Message: log,
+		})
+		if err != nil {
+			return err
+		}
+	}
+	for _, errorMsg := range errors {
+		err := util.SendMessage(conn, &types.LogMessage{
+			Type:    "rawerror",
+			Message: errorMsg,
+		})
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }

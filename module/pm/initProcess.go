@@ -38,7 +38,7 @@ func (pm *PM) initProcess(startMessage types.StartMessage, process *PMProcess) e
 		pm.mainLogger.Errorln(err)
 		return err
 	}
-	logger, err := logger.CreateLogger(startMessage.Name, true, pm.server)
+	logger, err := logger.CreateLogger(startMessage.Name, true, pm.server, startMessage.MaxLogfileSize)
 	if err != nil {
 		pm.mainLogger.Errorln(err)
 		return err

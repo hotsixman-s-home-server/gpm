@@ -173,20 +173,43 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.textInput.Width = m.width - 6
 
 	case types.LogMessage:
-		if msg.Type == "error" {
-			m.errors = append(m.errors, logger.SErrorln(msg.Message))
-			if len(m.errors) > 500 {
-				m.errors = m.errors[len(m.errors)-500:]
+		switch msg.Type {
+		case "log":
+			{
+				m.logs = append(m.logs, logger.SLogln(msg.Message))
+				if len(m.logs) > 500 {
+					m.logs = m.logs[len(m.logs)-500:]
+				}
+				m.logViewport.SetContent(strings.Join(m.logs, "\n"))
+				m.logViewport.GotoBottom()
 			}
-			m.errViewport.SetContent(strings.Join(m.errors, "\n"))
-			m.errViewport.GotoBottom()
-		} else {
-			m.logs = append(m.logs, logger.SLogln(msg.Message))
-			if len(m.logs) > 500 {
-				m.logs = m.logs[len(m.logs)-500:]
+		case "error":
+			{
+				m.errors = append(m.errors, logger.SErrorln(msg.Message))
+				if len(m.errors) > 500 {
+					m.errors = m.errors[len(m.errors)-500:]
+				}
+				m.errViewport.SetContent(strings.Join(m.errors, "\n"))
+				m.errViewport.GotoBottom()
 			}
-			m.logViewport.SetContent(strings.Join(m.logs, "\n"))
-			m.logViewport.GotoBottom()
+		case "rawlog":
+			{
+				m.logs = append(m.logs, msg.Message)
+				if len(m.logs) > 500 {
+					m.logs = m.logs[len(m.logs)-500:]
+				}
+				m.logViewport.SetContent(strings.Join(m.logs, "\n"))
+				m.logViewport.GotoBottom()
+			}
+		case "rawerror":
+			{
+				m.errors = append(m.errors, msg.Message)
+				if len(m.errors) > 500 {
+					m.errors = m.errors[len(m.errors)-500:]
+				}
+				m.errViewport.SetContent(strings.Join(m.errors, "\n"))
+				m.errViewport.GotoBottom()
+			}
 		}
 		return m, m.waitForMessage()
 
@@ -254,7 +277,13 @@ var connectCmd = &cobra.Command{
 			os.Exit(1)
 		}
 
-		c, err := client.NewClient(args[0], conn, reader, messageChan, closeChan)
+		lineCount, err := cmd.Flags().GetInt("lines")
+		if err != nil {
+			logger.Errorln(err)
+			os.Exit(1)
+		}
+
+		c, err := client.NewClient(args[0], conn, reader, lineCount, messageChan, closeChan)
 		if err != nil {
 			logger.Errorln(err)
 			os.Exit(1)
@@ -269,5 +298,6 @@ var connectCmd = &cobra.Command{
 }
 
 func init() {
+	connectCmd.Flags().Int("lines", 15, "Number of previous log lines")
 	rootCmd.AddCommand(connectCmd)
 }

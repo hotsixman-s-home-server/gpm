@@ -1,8 +1,9 @@
 package types
 
 type ConnectRequestMessage struct {
-	Type string `json:"type"`
-	Name string `json:"name"`
+	Type  string `json:"type"`
+	Name  string `json:"name"`
+	Lines int    `json:"lines"`
 }
 
 type CommandMessage struct {
@@ -21,6 +22,7 @@ type StartMessage struct {
 	Cwd             string            `json:"cwd"`
 	Env             map[string]string `json:"env"`
 	MaxRecoverCount int               `json:"maxRecoverCount"`
+	MaxLogfileSize  int               `json:"maxLogfileSize"`
 }
 
 type StartResultMessage struct {
@@ -97,7 +99,7 @@ type ListElement struct {
 
 // log
 type LogMessage struct {
-	// "log" | "error"
+	// "log" | "error" | "rawlog" | "rawerror"
 	Type    string `json:"type"`
 	Message string `json:"message"`
 }

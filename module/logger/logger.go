@@ -48,6 +48,12 @@ type Logger struct {
 	server    types.ServerInterface
 	mutex     *sync.Mutex
 	main      bool
+	//KB
+	maxFileSize int
+	//B
+	logFileSize int
+	//B
+	errorFileSize int
 }
 
 func GetMainLogger() (*Logger, error) {
@@ -81,17 +87,18 @@ func GetMainLogger() (*Logger, error) {
 	}
 
 	return &Logger{
-		dirPath:   dirPath,
-		logFile:   logFile,
-		errorFile: errorFile,
-		name:      "",
-		server:    nil,
-		mutex:     &sync.Mutex{},
-		main:      true,
+		dirPath:     dirPath,
+		logFile:     logFile,
+		errorFile:   errorFile,
+		name:        "",
+		server:      nil,
+		mutex:       &sync.Mutex{},
+		main:        true,
+		maxFileSize: 1024 * 100,
 	}, nil
 }
 
-func CreateLogger(name string, timeRecording bool, server types.ServerInterface) (*Logger, error) {
+func CreateLogger(name string, timeRecording bool, server types.ServerInterface, maxFileSize int) (*Logger, error) {
 	homeDir, err := util.GetHomeDirPath()
 	if err != nil {
 		return nil, err
@@ -119,13 +126,14 @@ func CreateLogger(name string, timeRecording bool, server types.ServerInterface)
 	}
 
 	return &Logger{
-		dirPath:   dirPath,
-		logFile:   logFile,
-		errorFile: errorFile,
-		name:      name,
-		server:    server,
-		mutex:     &sync.Mutex{},
-		main:      false,
+		dirPath:     dirPath,
+		logFile:     logFile,
+		errorFile:   errorFile,
+		name:        name,
+		server:      server,
+		mutex:       &sync.Mutex{},
+		main:        false,
+		maxFileSize: maxFileSize,
 	}, nil
 }
 
@@ -181,102 +189,48 @@ func (this *Logger) Errorln(v ...any) {
 	}
 }
 
-func (this *Logger) appendLog(message string) {
+func (this *Logger) appendLog(message string) error {
 	this.mutex.Lock()
 	defer this.mutex.Unlock()
 
-	this.logFile.WriteString(message + "\n")
-}
-func (this *Logger) appendError(message string) {
-	this.mutex.Lock()
-	defer this.mutex.Unlock()
-
-	this.errorFile.WriteString(message + "\n")
-}
-
-/*
-func (this *Logger) ReadLastLines(n int) ([]string, error) {
-	this.mutex.Lock()
-	if this.file == nil {
-		this.mutex.Unlock()
-		return nil, fmt.Errorf("file is not opened")
-	}
-	filePath := this.file.Name()
-	this.mutex.Unlock()
-
-	file, err := os.Open(filePath)
-	if err != nil {
-		return nil, err
-	}
-	defer file.Close()
-
-	stat, err := file.Stat()
-	if err != nil {
-		return nil, err
-	}
-
-	fileSize := stat.Size()
-	if fileSize == 0 {
-		return []string{}, nil
-	}
-
-	return this.readLastLinesInternal(file, n, fileSize)
-}
-
-func (this *Logger) readLastLinesInternal(file *os.File, n int, fileSize int64) ([]string, error) {
-	var (
-		lines   []string
-		cursor  int64 = 0
-		bufSize int64 = 1024
-		tail    string
-	)
-
-	for int64(len(lines)) <= int64(n) && cursor < fileSize {
-		cursor += bufSize
-		if cursor > fileSize {
-			cursor = fileSize
-		}
-
-		_, err := file.Seek(-cursor, io.SeekEnd)
+	message = message + "\n"
+	size := len([]byte(message))
+	if this.logFileSize+size > this.maxFileSize*1024 {
+		err := this.newLogFile()
 		if err != nil {
-			return nil, err
-		}
-
-		data := make([]byte, bufSize)
-		if cursor == fileSize && fileSize%bufSize != 0 {
-			data = make([]byte, fileSize%bufSize)
-		}
-
-		nRead, _ := file.Read(data)
-		content := string(data[:nRead]) + tail
-
-		lines = strings.Split(content, "\n")
-		// 파일 끝이 \n으로 끝나면 마지막 빈 요소 제거
-		if len(lines) > 0 && lines[len(lines)-1] == "" {
-			lines = lines[:len(lines)-1]
-		}
-
-		if len(lines) > 1 {
-			tail = lines[0]
-			lines = lines[1:]
-		}
-
-		if cursor >= fileSize {
-			break
+			return err
 		}
 	}
 
-	if len(lines) > n {
-		return lines[len(lines)-n:], nil
+	_, err := this.logFile.WriteString(message)
+	if err != nil {
+		return err
 	}
-	return lines, nil
+	this.logFileSize += size
+	return nil
 }
-*/
-
-func (this *Logger) recreateFile() error {
+func (this *Logger) appendError(message string) error {
 	this.mutex.Lock()
 	defer this.mutex.Unlock()
 
+	message = message + "\n"
+	size := len([]byte(message))
+	if this.errorFileSize+size > this.maxFileSize*1024 {
+		err := this.newLogFile()
+		if err != nil {
+			return err
+		}
+	}
+
+	_, err := this.errorFile.WriteString(message + "\n")
+	if err != nil {
+		return err
+	}
+	this.errorFileSize += size
+	return nil
+}
+
+func (this *Logger) newLogFile() error {
 	logFilename := ""
 	errorFilename := ""
 	if this.main {
@@ -302,5 +256,83 @@ func (this *Logger) recreateFile() error {
 	errorFile, err := os.OpenFile(filepath.Join(this.dirPath, errorFilename), os.O_APPEND|os.O_CREATE|os.O_RDWR, 0644)
 	this.logFile = logFile
 	this.errorFile = errorFile
+	this.logFileSize = 0
+	this.errorFileSize = 0
 	return nil
+}
+
+func (this *Logger) TailLogs(lineCount int) ([]string, error) {
+	this.mutex.Lock()
+	defer this.mutex.Unlock()
+	filename := ""
+	if this.logFile != nil {
+		filename = this.logFile.Name()
+	}
+
+	return tailLines(filename, lineCount)
+}
+
+func (this *Logger) TailErrors(lineCount int) ([]string, error) {
+	this.mutex.Lock()
+	defer this.mutex.Unlock()
+	filename := ""
+	if this.errorFile != nil {
+		filename = this.errorFile.Name()
+	}
+
+	return tailLines(filename, lineCount)
+}
+
+func tailLines(filename string, lineCount int) ([]string, error) {
+	lineCount++
+	f, err := os.Open(filename)
+	if err != nil {
+		return nil, err
+	}
+	defer f.Close()
+
+	stat, err := f.Stat()
+	if err != nil {
+		return nil, err
+	}
+
+	var (
+		size   = stat.Size()
+		buf    []byte
+		count        = 0
+		offset int64 = 1
+		tmp          = make([]byte, 1)
+	)
+
+	for offset <= size {
+		_, err := f.ReadAt(tmp, size-offset)
+		if err != nil {
+			return nil, err
+		}
+
+		buf = append([]byte{tmp[0]}, buf...)
+
+		if tmp[0] == '\n' {
+			count++
+			if count > lineCount {
+				break
+			}
+		}
+
+		offset++
+	}
+
+	lines := strings.Split(string(buf), "\n")
+
+	// 앞쪽에 불완전한 줄 제거
+	if len(lines) > lineCount {
+		lines = lines[len(lines)-lineCount:]
+	}
+
+	// 마지막 빈 줄 제거
+	if len(lines) > 0 && lines[len(lines)-1] == "" {
+		lines = lines[:len(lines)-1]
+	}
+
+	return lines, nil
 }

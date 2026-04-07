@@ -15,7 +15,7 @@ type Client struct {
 	reader *bufio.Reader
 }
 
-func NewClient(name string, conn net.Conn, reader *bufio.Reader, messageChan chan types.LogMessage, closeChan chan bool) (*Client, error) {
+func NewClient(name string, conn net.Conn, reader *bufio.Reader, lineCount int, messageChan chan types.LogMessage, closeChan chan bool) (*Client, error) {
 	client := &Client{
 		conn:   conn,
 		reader: reader,
@@ -23,8 +23,9 @@ func NewClient(name string, conn net.Conn, reader *bufio.Reader, messageChan cha
 
 	// Send connection request message
 	message := types.ConnectRequestMessage{
-		Type: "connect",
-		Name: name,
+		Type:  "connect",
+		Name:  name,
+		Lines: lineCount,
 	}
 	err := util.SendMessage(conn, message)
 	if err != nil {

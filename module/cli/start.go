@@ -11,23 +11,14 @@ import (
 )
 
 var startCmd = &cobra.Command{
-	Use:   "start [name]",
+	Use:   "start [cmd]",
 	Short: "Start a new process",
-	Args:  cobra.ExactArgs(1),
+	Args:  cobra.MinimumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		run, err := cmd.Flags().GetString("run")
+		name, err := cmd.Flags().GetString("name")
 		if err != nil {
-			logger.Errorln("Invalid \"run\" flag.")
+			logger.Errorln("Invalid \"name\" flag.")
 			os.Exit(1)
-		}
-
-		processArgs, err := cmd.Flags().GetStringSlice("args")
-		if err != nil {
-			logger.Errorln("Invalid \"args\" flag.")
-			os.Exit(1)
-		}
-		if processArgs == nil {
-			processArgs = make([]string, 0)
 		}
 
 		cwd, err := cmd.Flags().GetString("cwd")
@@ -58,14 +49,21 @@ var startCmd = &cobra.Command{
 			os.Exit(1)
 		}
 
+		maxLogfileSize, err := cmd.Flags().GetInt("max-log")
+		if err != nil {
+			logger.Errorln(err)
+			os.Exit(1)
+		}
+
 		startMessage := types.StartMessage{
 			Type:            "start",
-			Name:            args[0],
-			Run:             run,
-			Args:            processArgs,
+			Name:            name,
+			Run:             args[0],
+			Args:            args[1:],
 			Cwd:             cwd,
 			Env:             env,
 			MaxRecoverCount: maxRecoverCount,
+			MaxLogfileSize:  maxLogfileSize,
 		}
 
 		conn, reader, err := client.MakeUDSConn()
@@ -91,11 +89,11 @@ var startCmd = &cobra.Command{
 }
 
 func init() {
-	startCmd.Flags().String("run", "", "Command to execute.")
-	startCmd.MarkFlagRequired("run")
+	startCmd.Flags().String("name", "", "Set the name of the process.")
+	startCmd.MarkFlagRequired("name")
 	startCmd.Flags().String("cwd", "", "Working directory of the starting process.")
-	startCmd.Flags().StringSlice("args", []string{}, "Extra arguments to start the process.")
 	startCmd.Flags().StringToString("env", nil, "Set envoriment values for the starting process.")
 	startCmd.Flags().Int("max-recover", 10, "Max recover count.")
+	startCmd.Flags().Int("max-log", 1024*100, "Max logfile size(KB).")
 	rootCmd.AddCommand(startCmd)
 }
