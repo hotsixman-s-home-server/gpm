@@ -70,6 +70,7 @@ func (pm *PM) initProcess(startMessage types.StartMessage, process *PMProcess) e
 			logger:       logger,
 			startMessage: startMessage,
 			util:         util,
+			restartCount: 0,
 		}
 		pm.process[startMessage.Name] = process
 		pm.processArr = append(pm.processArr, process)
@@ -96,6 +97,7 @@ func (pm *PM) initProcess(startMessage types.StartMessage, process *PMProcess) e
 	}()
 
 	go func() {
+		restartFlag := false
 		err := process.cmd.Wait()
 		if err == nil || process.status == "stop" {
 			process.logger.Logln(fmt.Sprintf("Process exited. Error: %v", err))
@@ -104,6 +106,10 @@ func (pm *PM) initProcess(startMessage types.StartMessage, process *PMProcess) e
 		} else {
 			process.logger.Errorln(fmt.Sprintf("Process exited. Error: %v", err))
 			process.status = "error"
+			if process.restartCount < process.startMessage.MaxRestartCount {
+				process.restartCount++
+				restartFlag = true
+			}
 		}
 
 		process.stdin.Close()
@@ -114,6 +120,12 @@ func (pm *PM) initProcess(startMessage types.StartMessage, process *PMProcess) e
 		process.stderr = nil
 		process.cmd = nil
 		process.util = nil
+
+		if restartFlag {
+			pm.mainLogger.Errorln("Restarting process:", process.name)
+			process.logger.Errorln("Restarting process...")
+			go pm.initProcess(startMessage, process)
+		}
 	}()
 
 	return nil

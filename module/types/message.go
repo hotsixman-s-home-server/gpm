@@ -14,12 +14,13 @@ type CommandMessage struct {
 
 type StartMessage struct {
 	// "start"
-	Type string            `json:"type"`
-	Name string            `json:"name"`
-	Run  string            `json:"run"`
-	Args []string          `json:"args"`
-	Cwd  string            `json:"cwd"`
-	Env  map[string]string `json:"Env"`
+	Type            string            `json:"type"`
+	Name            string            `json:"name"`
+	Run             string            `json:"run"`
+	Args            []string          `json:"args"`
+	Cwd             string            `json:"cwd"`
+	Env             map[string]string `json:"env"`
+	MaxRestartCount int               `json:"maxRestartCount"`
 }
 
 type StartResultMessage struct {
@@ -75,6 +76,7 @@ type ListElement struct {
 	Status     string  `json:"status"`
 	CPUPercent float64 `json:"cpuPercent"`
 	Mem        float64 `json:"mem"`
+	Restart    int     `json:"restart"`
 }
 
 // log

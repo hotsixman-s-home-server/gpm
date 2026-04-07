@@ -25,10 +25,10 @@ var listCmd = &cobra.Command{
 			os.Exit(1)
 		}
 
-		fmt.Printf("| %-15s | %-10s | %10s | %12s |\n", "Name", "Status", "CPU", "Memory")
+		fmt.Printf("| %-15s | %-10s | %-10s | %10s | %12s |\n", "Name", "Status", "Restart", "CPU", "Memory")
 		fmt.Println("---------------------------------------------------------")
 		for _, elem := range resultMessage.List {
-			fmt.Printf("| %-15s | %-10s | %9.2f%% | %9.2f MB |\n", elem.Name, elem.Status, elem.CPUPercent, elem.Mem)
+			fmt.Printf("| %-15s | %-10s | %-10d | %9.2f%% | %9.2f MB |\n", elem.Name, elem.Status, elem.Restart, elem.CPUPercent, elem.Mem)
 			fmt.Println("---------------------------------------------------------")
 		}
 	},

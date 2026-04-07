@@ -31,6 +31,7 @@ type PMProcess struct {
 	logger       *logger.Logger
 	startMessage types.StartMessage
 	util         *processUtil.Process
+	restartCount int
 }
 
 func NewPM(mainLogger *logger.Logger) *PM {

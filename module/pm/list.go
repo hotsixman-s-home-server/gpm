@@ -12,6 +12,7 @@ func (pm *PM) List() []types.ListElement {
 			Status:     string(process.status),
 			CPUPercent: 0,
 			Mem:        0,
+			Restart:    process.restartCount,
 		}
 
 		if process.util != nil {
