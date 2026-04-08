@@ -57,12 +57,12 @@ type Logger struct {
 }
 
 func GetMainLogger() (*Logger, error) {
-	homeDir, err := util.GetHomeDirPath()
+	geepDir, err := util.GetGeepDir()
 	if err != nil {
 		return nil, err
 	}
 
-	dirPath := filepath.Join(homeDir, "log")
+	dirPath := filepath.Join(geepDir, "log")
 	if _, err := os.Stat(dirPath); os.IsNotExist(err) {
 		err := os.MkdirAll(dirPath, 0755)
 		if err != nil {
@@ -99,12 +99,12 @@ func GetMainLogger() (*Logger, error) {
 }
 
 func CreateLogger(name string, timeRecording bool, server types.ServerInterface, maxFileSize int) (*Logger, error) {
-	homeDir, err := util.GetHomeDirPath()
+	geepDir, err := util.GetGeepDir()
 	if err != nil {
 		return nil, err
 	}
 
-	dirPath := filepath.Join(homeDir, "log-process", filepath.Clean(name))
+	dirPath := filepath.Join(geepDir, "log-process", filepath.Clean(name))
 	if _, err := os.Stat(dirPath); os.IsNotExist(err) {
 		err := os.MkdirAll(dirPath, 0755)
 		if err != nil {

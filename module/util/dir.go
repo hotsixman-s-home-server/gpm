@@ -5,19 +5,24 @@ import (
 	"path/filepath"
 )
 
-func GetHomeDirPath() (string, error) {
+func GetGeepDir() (string, error) {
+	envGeepDir := os.Getenv("GEEP_DIR")
+	if envGeepDir != "" {
+		return envGeepDir, nil
+	}
+
 	dir, err := os.UserHomeDir()
 	if err != nil {
 		return "", err
 	}
 
-	homeDir := filepath.Join(dir, ".geep")
+	geepDir := filepath.Join(dir, ".geep")
 
-	return homeDir, nil
+	return geepDir, nil
 }
 
 func GetUDSPath() (string, error) {
-	dir, err := os.UserHomeDir()
+	dir, err := GetGeepDir()
 	if err != nil {
 		return "", err
 	}

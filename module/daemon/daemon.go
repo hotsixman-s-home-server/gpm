@@ -30,7 +30,8 @@ func SpawnDaemon() (int, error) {
 	}
 
 	cmd := exec.Command(os.Args[0], os.Args[1:]...)
-	cmd.Env = append(os.Environ(), DAEMON_ENV+"=1")
+	env := append(os.Environ(), DAEMON_ENV+"=1")
+	cmd.Env = env
 	//cmd.Stdin = nil
 	//cmd.Stdout = nil
 	//cmd.Stderr = nil
@@ -70,12 +71,12 @@ func DaemonInit() {
 	}
 
 	// .geep folder
-	homeDir, err := util.GetHomeDirPath()
+	geepDir, err := util.GetGeepDir()
 	if err != nil {
 		logger.Errorln(err)
 		os.Exit(1)
 	}
-	err = os.MkdirAll(homeDir, 0755)
+	err = os.MkdirAll(geepDir, 0755)
 	if err != nil {
 		logger.Errorln(err)
 		os.Exit(1)

@@ -64,9 +64,9 @@ func openDB() (*_DB, error) {
 }
 
 func getDBPath() (string, error) {
-	homeDir, err := util.GetHomeDirPath()
+	geepDir, err := util.GetGeepDir()
 	if err != nil {
 		return "", err
 	}
-	return filepath.Join(homeDir, "main.db"), nil
+	return filepath.Join(geepDir, "main.db"), nil
 }

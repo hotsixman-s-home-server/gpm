@@ -15,6 +15,7 @@ var initCmd = &cobra.Command{
 		if os.Getenv("GEEP_DAEMON_PROCESS") == "1" {
 			os.Exit(1)
 		}
+
 		logger.Logln("Starting GEEP daemon in background...")
 		status, err := daemon.SpawnDaemon()
 		switch status {

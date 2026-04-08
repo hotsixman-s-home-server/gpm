@@ -10,12 +10,12 @@ import (
 )
 
 func checkPid() (int, bool, error) {
-	homeDir, err := util.GetHomeDirPath()
+	geepDir, err := util.GetGeepDir()
 	if err != nil {
 		return 0, false, err
 	}
 
-	pidFilePath := filepath.Join(homeDir, "pid")
+	pidFilePath := filepath.Join(geepDir, "pid")
 
 	// 1. 파일 읽기
 	data, err := os.ReadFile(pidFilePath)
@@ -38,12 +38,12 @@ func checkPid() (int, bool, error) {
 }
 
 func recordPid() error {
-	homeDir, err := util.GetHomeDirPath()
+	geepDir, err := util.GetGeepDir()
 	if err != nil {
 		return err
 	}
 
-	pidFilePath := filepath.Join(homeDir, "pid")
+	pidFilePath := filepath.Join(geepDir, "pid")
 	err = deletePid()
 	if err != nil {
 		return err
@@ -63,12 +63,12 @@ func recordPid() error {
 }
 
 func deletePid() error {
-	homeDir, err := util.GetHomeDirPath()
+	geepDir, err := util.GetGeepDir()
 	if err != nil {
 		return err
 	}
 
-	pidFilePath := filepath.Join(homeDir, "pid")
+	pidFilePath := filepath.Join(geepDir, "pid")
 
 	err = os.Remove(pidFilePath)
 
