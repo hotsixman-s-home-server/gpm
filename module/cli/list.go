@@ -6,6 +6,8 @@ import (
 	"geep/module/logger"
 	"os"
 
+	"github.com/charmbracelet/lipgloss"
+	"github.com/charmbracelet/lipgloss/table"
 	"github.com/spf13/cobra"
 )
 
@@ -25,12 +27,38 @@ var listCmd = &cobra.Command{
 			os.Exit(1)
 		}
 
-		fmt.Printf("| %-15s | %-10s | %-10s | %10s | %12s |\n", "Name", "Status", "Recovered", "CPU", "Memory")
-		fmt.Println("---------------------------------------------------------")
+		// Define styles
+		re := lipgloss.NewRenderer(os.Stdout)
+		headerStyle := re.NewStyle().Foreground(lipgloss.Color("5")).Bold(true).Align(lipgloss.Center)
+		cellStyle := re.NewStyle().Padding(0, 1)
+		borderStyle := re.NewStyle().Foreground(lipgloss.Color("240"))
+
+		// Prepare rows
+		var rows [][]string
 		for _, elem := range resultMessage.List {
-			fmt.Printf("| %-15s | %-10s | %-10d | %9.2f%% | %9.2f MB |\n", elem.Name, elem.Status, elem.Recovered, elem.CPUPercent, elem.Mem)
-			fmt.Println("---------------------------------------------------------")
+			rows = append(rows, []string{
+				elem.Name,
+				elem.Status,
+				fmt.Sprintf("%d", elem.Recovered),
+				fmt.Sprintf("%.2f%%", elem.CPUPercent),
+				fmt.Sprintf("%.2f MB", elem.Mem),
+			})
 		}
+
+		// Create and render table
+		t := table.New().
+			Border(lipgloss.NormalBorder()).
+			BorderStyle(borderStyle).
+			Headers("NAME", "STATUS", "RECOVERED", "CPU", "MEMORY").
+			Rows(rows...).
+			StyleFunc(func(row, col int) lipgloss.Style {
+				if row == 0 {
+					return headerStyle
+				}
+				return cellStyle
+			})
+
+		fmt.Println(t)
 	},
 }
 
