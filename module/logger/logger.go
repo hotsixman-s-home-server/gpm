@@ -249,6 +249,13 @@ func (this *Logger) newLogFile() error {
 		//}
 	}
 
+	if this.logFile != nil {
+		this.logFile.Close()
+	}
+	if this.errorFile != nil {
+		this.errorFile.Close()
+	}
+
 	logFile, err := os.OpenFile(filepath.Join(this.dirPath, logFilename), os.O_APPEND|os.O_CREATE|os.O_RDWR, 0644)
 	if err != nil {
 		return err
@@ -284,7 +291,10 @@ func (this *Logger) TailErrors(lineCount int) ([]string, error) {
 }
 
 func tailLines(filename string, lineCount int) ([]string, error) {
-	lineCount++
+	if lineCount <= 0 {
+		return []string{}, nil
+	}
+
 	f, err := os.Open(filename)
 	if err != nil {
 		return nil, err
@@ -296,42 +306,61 @@ func tailLines(filename string, lineCount int) ([]string, error) {
 		return nil, err
 	}
 
+	size := stat.Size()
+	if size == 0 {
+		return []string{}, nil
+	}
+
+	const bufferSize = 4096
 	var (
-		size   = stat.Size()
-		buf    []byte
-		count        = 0
-		offset int64 = 1
-		tmp          = make([]byte, 1)
+		buf        = make([]byte, bufferSize)
+		result     []byte
+		foundLines = 0
+		offset     = size
 	)
 
-	for offset <= size {
-		_, err := f.ReadAt(tmp, size-offset)
-		if err != nil {
-			return nil, err
+	for offset > 0 && foundLines <= lineCount {
+		readSize := int64(bufferSize)
+		if offset < readSize {
+			readSize = offset
+		}
+		offset -= readSize
+
+		n, err := f.ReadAt(buf[:readSize], offset)
+		if err != nil && n == 0 {
+			break
 		}
 
-		buf = append([]byte{tmp[0]}, buf...)
-
-		if tmp[0] == '\n' {
-			count++
-			if count > lineCount {
-				break
+		// 현재 버퍼에서 개행 문자 카운트 (역순 탐색)
+		for i := n - 1; i >= 0; i-- {
+			if buf[i] == '\n' {
+				foundLines++
+				if foundLines > lineCount {
+					// 요청한 줄 수만큼 찾았으므로, 현재 개행 문자 다음부터의 데이터를 결과에 추가
+					chunk := make([]byte, n-(i+1))
+					copy(chunk, buf[i+1:n])
+					result = append(chunk, result...)
+					goto done
+				}
 			}
 		}
-
-		offset++
+		// 아직 줄 수가 부족하면 현재 읽은 블록 전체를 결과 앞에 붙임
+		chunk := make([]byte, n)
+		copy(chunk, buf[:n])
+		result = append(chunk, result...)
 	}
 
-	lines := strings.Split(string(buf), "\n")
+done:
+	lines := strings.Split(string(result), "\n")
 
-	// 앞쪽에 불완전한 줄 제거
-	if len(lines) > lineCount {
-		lines = lines[len(lines)-lineCount:]
-	}
-
-	// 마지막 빈 줄 제거
+	// 파일이 개행 문자로 끝나는 경우 발생하는 마지막 빈 요소 제거
 	if len(lines) > 0 && lines[len(lines)-1] == "" {
 		lines = lines[:len(lines)-1]
+	}
+
+	// 실제 요청한 개수만큼 슬라이싱 (안전한 경계값 처리)
+	if len(lines) > lineCount {
+		lines = lines[len(lines)-lineCount:]
 	}
 
 	return lines, nil
