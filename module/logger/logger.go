@@ -319,6 +319,39 @@ func tailLines(filename string, lineCount int) ([]string, error) {
 		offset     = size
 	)
 
+	getReturnValue := func() ([]string, error) {
+		lines := util.ArrayMap(strings.Split(string(result), "\n"), func(v string, i int, a []string) string {
+			for {
+				length := len(v)
+				if length == 0 {
+					return v
+				} else if v[length-1] == '\n' {
+					v = v[:length]
+				} else {
+					return v
+				}
+			}
+		})
+		lines = util.ArrayFilter[string](lines, func(v string, i int, a []string) bool {
+			if len(v) == 0 {
+				return false
+			}
+			return true
+		})
+
+		// 파일이 개행 문자로 끝나는 경우 발생하는 마지막 빈 요소 제거
+		if len(lines) > 0 && lines[len(lines)-1] == "" {
+			lines = lines[:len(lines)-1]
+		}
+
+		// 실제 요청한 개수만큼 슬라이싱 (안전한 경계값 처리)
+		if len(lines) > lineCount {
+			lines = lines[len(lines)-lineCount:]
+		}
+
+		return lines, nil
+	}
+
 	for offset > 0 && foundLines <= lineCount {
 		readSize := int64(bufferSize)
 		if offset < readSize {
@@ -340,7 +373,7 @@ func tailLines(filename string, lineCount int) ([]string, error) {
 					chunk := make([]byte, n-(i+1))
 					copy(chunk, buf[i+1:n])
 					result = append(chunk, result...)
-					goto done
+					return getReturnValue()
 				}
 			}
 		}
@@ -349,19 +382,5 @@ func tailLines(filename string, lineCount int) ([]string, error) {
 		copy(chunk, buf[:n])
 		result = append(chunk, result...)
 	}
-
-done:
-	lines := strings.Split(string(result), "\n")
-
-	// 파일이 개행 문자로 끝나는 경우 발생하는 마지막 빈 요소 제거
-	if len(lines) > 0 && lines[len(lines)-1] == "" {
-		lines = lines[:len(lines)-1]
-	}
-
-	// 실제 요청한 개수만큼 슬라이싱 (안전한 경계값 처리)
-	if len(lines) > lineCount {
-		lines = lines[len(lines)-lineCount:]
-	}
-
-	return lines, nil
+	return getReturnValue()
 }
